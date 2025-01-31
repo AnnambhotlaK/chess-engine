@@ -81,6 +81,9 @@ enum
     h1,
 };
 
+// sides to move (colors)
+enum { white, black };
+
 /* Need for future
 "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8"
 "a7", "b7", "c7", "d7", "e7", "f7", "g7", "h7"
@@ -124,22 +127,123 @@ void print_bitboard(U64 bitboard)
     printf("Bitboard as Decimal: %llud\n\n", bitboard);
 }
 
-int main(void)
-{
-    // define bitboard
+/*
+    ATTACKS
+*/
+
+/*
+ 8  0 1 1 1 1 1 1 1
+ 7  0 1 1 1 1 1 1 1
+ 6  0 1 1 1 1 1 1 1
+ 5  0 1 1 1 1 1 1 1
+ 4  0 1 1 1 1 1 1 1
+ 3  0 1 1 1 1 1 1 1
+ 2  0 1 1 1 1 1 1 1
+ 1  0 1 1 1 1 1 1 1
+
+    a b c d e f g h
+*/
+const U64 not_a_file = 18374403900871474942ULL;
+
+/*
+ 8  1 1 1 1 1 1 1 0
+ 7  1 1 1 1 1 1 1 0
+ 6  1 1 1 1 1 1 1 0
+ 5  1 1 1 1 1 1 1 0
+ 4  1 1 1 1 1 1 1 0
+ 3  1 1 1 1 1 1 1 0
+ 2  1 1 1 1 1 1 1 0
+ 1  1 1 1 1 1 1 1 0
+
+    a b c d e f g h
+*/
+const U64 not_h_file = 9187201950435737471ULL;
+
+/*
+ 8  1 1 1 1 1 1 0 0
+ 7  1 1 1 1 1 1 0 0
+ 6  1 1 1 1 1 1 0 0
+ 5  1 1 1 1 1 1 0 0
+ 4  1 1 1 1 1 1 0 0
+ 3  1 1 1 1 1 1 0 0
+ 2  1 1 1 1 1 1 0 0
+ 1  1 1 1 1 1 1 0 0
+
+    a b c d e f g h
+*/
+const U64 not_hg_file = 4557430888798830399ULL;
+
+/*
+ 8  0 0 1 1 1 1 1 1
+ 7  0 0 1 1 1 1 1 1
+ 6  0 0 1 1 1 1 1 1
+ 5  0 0 1 1 1 1 1 1
+ 4  0 0 1 1 1 1 1 1
+ 3  0 0 1 1 1 1 1 1
+ 2  0 0 1 1 1 1 1 1
+ 1  0 0 1 1 1 1 1 1
+
+    a b c d e f g h
+*/
+const U64 not_ab_file = 18229723555195321596ULL;
+
+
+// pawn attacks table [side][square]
+U64 pawn_attacks[2][64];
+
+// generate pawn attacks
+U64 mask_pawn_attacks(int side, int square) {
+    
+    // resulting attacks bitboard
+    U64 attacks = 0ULL;
+
+    // piece bitboard
     U64 bitboard = 0ULL;
 
-    // test set_bit
-    set_bit(bitboard, e4);
-    set_bit(bitboard, c3);
-    set_bit(bitboard, f2);
+    // set piece on board
+    set_bit(bitboard, square);
 
-    print_bitboard(bitboard);
+    // white pawns
+    if (!side) {
+        if ((bitboard >> 7) & not_a_file) {
+            attacks |= (bitboard >> 7);
+        }
+        if ((bitboard >> 9) & not_h_file) {
+            attacks |= (bitboard >> 9);
+        }
+    }
+    // black pawns
+    else {
+        if ((bitboard << 7) & not_h_file) {
+            attacks |= (bitboard << 7);
+        }
+        if ((bitboard << 9) & not_a_file) {
+            attacks |= (bitboard << 9);
+        }
+    }
 
-    // test pop_bit
-    pop_bit(bitboard, e4);
+    // return attack map
+    return attacks;
+}
 
-    print_bitboard(bitboard);
+// init leaper pieces attacks
+void init_leapers_attacks() {
+    // loop over 64 board squares
+    for (int square = 0; square < 64; square++) {
+        // init pawn attacks
+        pawn_attacks[white][square] = mask_pawn_attacks(white, square);
+        pawn_attacks[black][square] = mask_pawn_attacks(black, square);
+    }
+}
 
-    return 0;
+int main(void)
+{
+    // init leaper pieces attacks
+    init_leapers_attacks();
+
+    // loop over board
+    for (int square = 0; square < 64; square++) {
+        print_bitboard(pawn_attacks[black][square]);
+
+    }
 }
