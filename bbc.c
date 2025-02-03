@@ -1,7 +1,8 @@
 #include <stdio.h>
 
-// make debug && ./bbc
-// (cmd to compile, debug and run)
+/* ***********************************
+         MACROS, DATA TYPES
+   ***********************************/
 
 // define bitboard data type
 // 64-bit unsigned int
@@ -11,6 +12,10 @@
 #define get_bit(bitboard, square) (bitboard & (1ULL << square))
 #define set_bit(bitboard, square) (bitboard |= (1ULL << square))
 #define pop_bit(bitboard, square) (get_bit(bitboard, square) ? (bitboard ^= (1ULL << square)) : 0)
+
+/* ***********************************
+            ENUM DEFINITIONS
+   ***********************************/
 
 // board squares
 enum
@@ -131,64 +136,15 @@ void print_bitboard(U64 bitboard)
     printf("Bitboard as Decimal: %llud\n\n", bitboard);
 }
 
-/*
-    ATTACKS
-*/
+/* ***********************************
 
-/*
- 8  0 1 1 1 1 1 1 1
- 7  0 1 1 1 1 1 1 1
- 6  0 1 1 1 1 1 1 1
- 5  0 1 1 1 1 1 1 1
- 4  0 1 1 1 1 1 1 1
- 3  0 1 1 1 1 1 1 1
- 2  0 1 1 1 1 1 1 1
- 1  0 1 1 1 1 1 1 1
+   OFF-BOARD MOVE PREVENTION CONSTANTS
 
-    a b c d e f g h
-*/
+   ***********************************/
+
 const U64 not_a_file = 18374403900871474942ULL;
-
-/*
- 8  1 1 1 1 1 1 1 0
- 7  1 1 1 1 1 1 1 0
- 6  1 1 1 1 1 1 1 0
- 5  1 1 1 1 1 1 1 0
- 4  1 1 1 1 1 1 1 0
- 3  1 1 1 1 1 1 1 0
- 2  1 1 1 1 1 1 1 0
- 1  1 1 1 1 1 1 1 0
-
-    a b c d e f g h
-*/
 const U64 not_h_file = 9187201950435737471ULL;
-
-/*
- 8  1 1 1 1 1 1 0 0
- 7  1 1 1 1 1 1 0 0
- 6  1 1 1 1 1 1 0 0
- 5  1 1 1 1 1 1 0 0
- 4  1 1 1 1 1 1 0 0
- 3  1 1 1 1 1 1 0 0
- 2  1 1 1 1 1 1 0 0
- 1  1 1 1 1 1 1 0 0
-
-    a b c d e f g h
-*/
 const U64 not_hg_file = 4557430888798830399ULL;
-
-/*
- 8  0 0 1 1 1 1 1 1
- 7  0 0 1 1 1 1 1 1
- 6  0 0 1 1 1 1 1 1
- 5  0 0 1 1 1 1 1 1
- 4  0 0 1 1 1 1 1 1
- 3  0 0 1 1 1 1 1 1
- 2  0 0 1 1 1 1 1 1
- 1  0 0 1 1 1 1 1 1
-
-    a b c d e f g h
-*/
 const U64 not_ab_file = 18229723555195321596ULL;
 
 // pawn attacks table [side][square]
@@ -199,6 +155,12 @@ U64 knight_attacks[64];
 
 // king attacks table [square]
 U64 king_attacks[64];
+
+/* ***********************************
+   ***********************************
+        ATTACK GENERATION FUNCTIONS
+   ***********************************
+   ***********************************/
 
 // generate pawn attacks
 U64 mask_pawn_attacks(int side, int square)
@@ -422,6 +384,12 @@ void init_leapers_attacks()
         king_attacks[square] = mask_king_attacks(square);
     }
 }
+
+/* ***********************************
+   ***********************************
+              MAIN DRIVER
+   ***********************************
+   ***********************************/
 
 int main(void)
 {
