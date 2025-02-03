@@ -292,7 +292,8 @@ U64 mask_knight_attacks(int square)
     return attacks;
 }
 
-U64 mask_king_attacks(int square) {
+U64 mask_king_attacks(int square)
+{
 
     // resulting attacks bitboard
     U64 attacks = 0ULL;
@@ -304,34 +305,104 @@ U64 mask_king_attacks(int square) {
     set_bit(bitboard, square);
 
     // generate king attacks
-    if (bitboard >> 8) {
+    if (bitboard >> 8)
+    {
         attacks |= (bitboard >> 8);
     }
-    if ((bitboard >> 9) & not_h_file) {
+    if ((bitboard >> 9) & not_h_file)
+    {
         attacks |= (bitboard >> 9);
     }
-    if ((bitboard >> 7) & not_a_file) {
+    if ((bitboard >> 7) & not_a_file)
+    {
         attacks |= (bitboard >> 7);
     }
-    if ((bitboard >> 1) & not_h_file) {
+    if ((bitboard >> 1) & not_h_file)
+    {
         attacks |= (bitboard >> 1);
     }
-    if (bitboard << 8) {
+    if (bitboard << 8)
+    {
         attacks |= (bitboard << 8);
     }
-    if ((bitboard << 9) & not_a_file) {
+    if ((bitboard << 9) & not_a_file)
+    {
         attacks |= (bitboard << 9);
     }
-    if ((bitboard << 7) & not_h_file) {
+    if ((bitboard << 7) & not_h_file)
+    {
         attacks |= (bitboard << 7);
     }
-    if ((bitboard << 1) & not_a_file) {
+    if ((bitboard << 1) & not_a_file)
+    {
         attacks |= (bitboard << 1);
     }
 
+    return attacks;
+}
+
+U64 mask_bishop_attacks(int square)
+{
+    // resulting attacks bitboard
+    U64 attacks = 0ULL;
+
+    // init ranks & files
+    int r, f;
+    // init target rank & files
+    int tRank = square / 8;
+    int tFile = square % 8;
+
+    // mask relevant bishop occupancy bits
+    for (r = tRank + 1, f = tFile + 1; r <= 6 && f <= 6; r++, f++)
+    {
+        attacks |= (1ULL << (r * 8 + f));
+    }
+    for (r = tRank - 1, f = tFile + 1; r >= 1 && f <= 6; r--, f++)
+    {
+        attacks |= (1ULL << (r * 8 + f));
+    }
+    for (r = tRank + 1, f = tFile - 1; r <= 6 && f >= 1; r++, f--)
+    {
+        attacks |= (1ULL << (r * 8 + f));
+    }
+    for (r = tRank - 1, f = tFile - 1; r >= 1 && f >= 1; r--, f--)
+    {
+        attacks |= (1ULL << (r * 8 + f));
+    }
 
     return attacks;
+}
 
+U64 mask_rook_attacks(int square)
+{
+    // resulting attacks bitboard
+    U64 attacks = 0ULL;
+
+    // init ranks & files
+    int r, f;
+    // init target rank & files
+    int tRank = square / 8;
+    int tFile = square % 8;
+
+    // mask relevant bishop occupancy bits
+    for (r = tRank + 1; r <= 6; r++)
+    {
+        attacks |= (1ULL << (r * 8 + tFile));
+    }
+    for (r = tRank - 1; r >= 1; r--)
+    {
+        attacks |= (1ULL << (r * 8 + tFile));
+    }
+    for (f = tFile + 1; f <= 6; f++)
+    {
+        attacks |= (1ULL << (tRank * 8 + f));
+    }
+    for (f = tFile - 1; f >= 1; f--)
+    {
+        attacks |= (1ULL << (tRank * 8 + f));
+    }
+
+    return attacks;
 }
 
 // init leaper pieces attacks
@@ -360,6 +431,6 @@ int main(void)
     // loop over board
     for (int square = 0; square < 64; square++)
     {
-        print_bitboard(king_attacks[square]);
+        print_bitboard(mask_rook_attacks(square));
     }
 }
