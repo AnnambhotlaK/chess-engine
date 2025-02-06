@@ -171,7 +171,7 @@ void print_bitboard(U64 bitboard)
 
 /* ***********************************
 
-   OFF-BOARD MOVE PREVENTION CONSTANTS
+   IMPORTANT MOVE ARRAYS, BITWISE CONSTANTS
 
    ***********************************/
 
@@ -179,6 +179,30 @@ const U64 not_a_file = 18374403900871474942ULL;
 const U64 not_h_file = 9187201950435737471ULL;
 const U64 not_hg_file = 4557430888798830399ULL;
 const U64 not_ab_file = 18229723555195321596ULL;
+
+// bishop relevant occupancy bit counts for each square
+const int bishop_relevant_bits[64] = {
+ 6,  5,  5,  5,  5,  5,  5,  6, 
+ 5,  5,  5,  5,  5,  5,  5,  5,
+ 5,  5,  7,  7,  7,  7,  5,  5,
+ 5,  5,  7,  9,  9,  7,  5,  5,
+ 5,  5,  7,  9,  9,  7,  5,  5,
+ 5,  5,  7,  7,  7,  7,  5,  5,
+ 5,  5,  5,  5,  5,  5,  5,  5,
+ 6,  5,  5,  5,  5,  5,  5,  6,
+};
+
+// rook relevant occupancy bit counts for each square
+const int rook_relevant_bits[64] = {
+ 12,  11,  11,  11,  11,  11,  11,  12, 
+ 11,  10,  10,  10,  10,  10,  10,  11,
+ 11,  10,  10,  10,  10,  10,  10,  11,
+ 11,  10,  10,  10,  10,  10,  10,  11,
+ 11,  10,  10,  10,  10,  10,  10,  11,
+ 11,  10,  10,  10,  10,  10,  10,  11,
+ 11,  10,  10,  10,  10,  10,  10,  11,
+ 12,  11,  11,  11,  11,  11,  11,  12,
+};
 
 // pawn attacks table [side][square]
 U64 pawn_attacks[2][64];
@@ -493,6 +517,31 @@ void init_leapers_attacks()
     }
 }
 
+// generates possible occupancy bits based on a piece's index
+U64 set_occupancy(int index, int bits_in_mask, U64 attack_mask) {
+
+    // occupancy map
+    U64 occupancy = 0ULL;
+
+    // loop over range of bits within attack_mask
+    for (int count = 0; count < bits_in_mask; count++) {
+        // get index of ls1b of attacks mask
+        int square = get_ls1b_index(attack_mask);
+
+        // pop ls1b
+        pop_bit(attack_mask, square);
+
+        // make sure occupancy is on board
+        if (index & (1 << count)) {
+            occupancy |= (1ULL << square);
+        }
+
+    }
+
+    return occupancy;
+
+}
+
 /* ***********************************
    ***********************************
               MAIN DRIVER
@@ -504,16 +553,13 @@ int main(void)
     // init leaper pieces attacks
     init_leapers_attacks();
 
-    // init occupancy bitboard
-    U64 block = 0ULL;
-    set_bit(block, d7);
-    set_bit(block, d2);
-    set_bit(block, d1);
-    set_bit(block, g4);
-    set_bit(block, b4);
-    printf("     index: %d\n     coordinate: %s\n", get_ls1b_index(block), square_to_coordinates[get_ls1b_index(block)]);
-    U64 test_bitboard = 0ULL;
-    set_bit(test_bitboard, get_ls1b_index(block));
-    print_bitboard(test_bitboard);
+    for (int rank = 0; rank < 8; rank++) {
+        for (int file = 0; file < 8; file++) {
+            int square = rank * 8 + file;
+            printf(" %d, ", count_bits(mask_rook_attacks(square)));
+        }
+        printf("\n");
+    }
+
     return 0;
 }
