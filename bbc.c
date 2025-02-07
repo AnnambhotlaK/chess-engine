@@ -136,6 +136,52 @@ const char* square_to_coordinates[] = {
     "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1",
 };
 
+/* ***********************************
+    RANDOM NUMBER GENERATION PROCESS
+   ***********************************/
+
+// pseudorandom number state
+unsigned int state = 1804289383;
+
+// generate 32-bit psuedorandom legal nums
+// necessary for magic numbers
+unsigned int get_random_U32_number() {
+    // get current state
+    unsigned int number = state;
+
+    // use XORSHIFT32 algo
+    number ^= number << 13;
+    number ^= number >> 17;
+    number ^= number << 5;
+
+    // update random state
+    state = number;
+
+    return number;
+}
+
+// generate 64 bit pseudorandom legal nums
+U64 get_random_U64_numbers() {
+    // def 4 random nums
+    U64 n1, n2, n3, n4;
+
+    // init random nums
+    // slicing only first 16 bits
+    n1 = (U64)(get_random_U32_number() & 0xFFFF);
+    n2 = (U64)(get_random_U32_number() & 0xFFFF);
+    n3 = (U64)(get_random_U32_number() & 0xFFFF);
+    n4 = (U64)(get_random_U32_number() & 0xFFFF);
+
+    // return bitboard comprised of all numbers concatenated
+    // Use left shifts and bitwise or
+    return (n1 | (n2 << 16) | (n3 << 32) | (n4 << 48));
+}
+
+// generate magic number candidate
+U64 generate_magic_number() {
+    return (get_random_U64_numbers() & get_random_U64_numbers() & get_random_U64_numbers());
+}
+
 
 // print bitboard function
 // for debugging
@@ -542,26 +588,6 @@ U64 set_occupancy(int index, int bits_in_mask, U64 attack_mask) {
 
 }
 
-// pseudorandom number state
-unsigned int state = 1804289383;
-
-// generate 32-bit psuedorandom legal nums
-// necessary for magic numbers
-unsigned int get_random_number() {
-    // get current state
-    unsigned int number = state;
-
-    // use XORSHIFT32 algo
-    number ^= number << 13;
-    number ^= number >> 17;
-    number ^= number << 5;
-
-    // update random state
-    state = number;
-
-    return number;
-}
-
 /* ***********************************
    ***********************************
               MAIN DRIVER
@@ -573,13 +599,11 @@ int main(void)
     // init leaper pieces attacks
     init_leapers_attacks();
 
-    // Testing Functions
-    printf("%ud\n", get_random_number());
-    printf("%ud\n", get_random_number());
-    printf("%ud\n", get_random_number());
-    printf("%ud\n", get_random_number());
-    printf("%ud\n", get_random_number());
-
-
+    // gets 32 bits
+    print_bitboard((U64)get_random_U32_number());
+    // get only least signficant 16 bits (top of board)
+    print_bitboard((U64)get_random_U32_number() & 0xFFFF);
+    print_bitboard(get_random_U64_numbers());
+    print_bitboard(generate_magic_number());
     return 0;
 }
