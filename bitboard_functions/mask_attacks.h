@@ -1,7 +1,7 @@
 #ifndef MASKATTACKS_H
 #define MASKATTACKS_H
 
-#include "ull.h"
+#include "../ull.h"
 
 extern U64 mask_pawn_attacks(int side, int square);
 extern U64 mask_knight_attacks(int square);

@@ -2,6 +2,9 @@
   "C_Cpp.errorSquiggles": "disabled",
   "files.associations": {
     "constants.h": "c",
-    "squares.h": "c"
+    "squares.h": "c",
+    "ull.h": "c",
+    "init_leapers.h": "c",
+    "slider_attacks.h": "c"
   }
 }

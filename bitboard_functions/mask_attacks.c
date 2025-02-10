@@ -1,5 +1,5 @@
 #include "mask_attacks.h"
-#include "macros.h"
+#include "../macros.h"
 
 // generate pawn attacks
 U64 mask_pawn_attacks(int side, int square)
