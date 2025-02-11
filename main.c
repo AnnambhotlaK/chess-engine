@@ -13,6 +13,9 @@
 #include "enums/rook_or_bishop.h"
 #include "constants.h"
 #include "macros.h"
+#include "bitboards.h"
+#include "enums/castling.h"
+#include "enums/pieces.h"
 
 // include important functions and processes
 #include "bitboard_functions/mask_attacks.c"
@@ -26,5 +29,19 @@ void init_all() {
 
 int main(void)
 {
+    init_all();
+
+    // set white pawn on e2
+    set_bit(bitboards[P], e2);
+
+    print_bitboard(bitboards[P]);
+
+    // print piece (ascii on windows, unicode otherwise)
+    #ifdef WIN64
+        printf("piece: %c\n", ascii_pieces[char_pieces['P']]);
+    #else
+        printf("piece: %c\n", unicode_pieces[char_pieces['P']]);
+    #endif
+
     return 0;
 }

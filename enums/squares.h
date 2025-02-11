@@ -67,6 +67,7 @@ typedef enum
     f1,
     g1,
     h1,
+    no_sq,
 } Squares;
 
 extern Squares BoardSquares;

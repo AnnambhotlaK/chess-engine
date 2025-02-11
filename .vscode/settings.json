@@ -5,6 +5,7 @@
     "squares.h": "c",
     "ull.h": "c",
     "init_leapers.h": "c",
-    "slider_attacks.h": "c"
+    "slider_attacks.h": "c",
+    "rook_or_bishop.h": "c"
   }
 }

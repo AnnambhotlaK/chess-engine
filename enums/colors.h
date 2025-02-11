@@ -4,7 +4,8 @@
 typedef enum
 {
     white,
-    black
+    black,
+    both,
 } Colors;
 
 extern Colors PieceColors;
