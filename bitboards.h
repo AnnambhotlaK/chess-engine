@@ -8,7 +8,7 @@ U64 bitboards[12];
 U64 occupancies[3];
 
 // side to move
-int side = -1;
+int side;
 
 // enpassant square
 int enpassant = no_sq;
