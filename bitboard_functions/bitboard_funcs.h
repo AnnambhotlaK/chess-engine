@@ -6,6 +6,8 @@
 extern inline int count_bits(U64 bitboard);
 extern inline int get_ls1b_index(U64 bitboard);
 extern void print_bitboard(U64 bitboard);
+extern void print_board();
+extern void parse_fen(char* fen);
 extern U64 set_occupancy(int index, int bits_in_mask, U64 attack_mask);
 
 #endif
