@@ -25,12 +25,17 @@
 
 void init_all() {
     init_leapers_attacks();
+    init_sliders_attacks(bishop);
+    init_sliders_attacks(rook);
 }
 
 int main(void)
 {
-    //init_all();
-    parse_fen("r2q1bnr/ppp2ppp/2n5/4p3/2PkN3/3PQP1B/PP2KP1P/R1B4R b - - 2 13");
-    print_board();
+    init_all();
+
+    U64 occupancy = 0ULL;
+    set_bit(occupancy, c5);
+
+    print_bitboard(get_bishop_attacks(d4, occupancy));
     return 0;
 }

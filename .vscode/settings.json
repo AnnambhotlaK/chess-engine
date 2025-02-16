@@ -6,6 +6,7 @@
     "ull.h": "c",
     "init_leapers.h": "c",
     "slider_attacks.h": "c",
-    "rook_or_bishop.h": "c"
+    "rook_or_bishop.h": "c",
+    "mask_attacks.h": "c"
   }
 }
