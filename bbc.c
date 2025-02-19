@@ -1292,6 +1292,33 @@ static inline U64 get_rook_attacks(int square, U64 occupancy)
     return rook_attacks[square][occupancy];
 }
 
+static inline U64 get_queen_attacks(int square, U64 occupancy) {
+
+    // queen attacks are all bishop OR rook attacks
+    U64 queen_attacks = (get_bishop_attacks(square, occupancy) | get_rook_attacks(square, occupancy));
+
+    /*
+    U64 bishop_occupancies = occupancy;
+    U64 rook_occupancies = occupancy;
+
+    bishop_occupancies &= bishop_masks[square];
+    bishop_occupancies *= bishop_magic_numbers[square];
+    bishop_occupancies >>= 64 - bishop_relevant_bits[square];
+
+    // save bishop attacks in result
+    queen_attacks = bishop_attacks[square][bishop_occupancies];
+
+    rook_occupancies &= rook_masks[square];
+    rook_occupancies *= rook_magic_numbers[square];
+    rook_occupancies >>= 64 - rook_relevant_bits[square];
+
+    // bitwise OR bishop attacks w/ rook attacks
+    queen_attacks |= rook_attacks[square][rook_occupancies];
+    */
+
+    return queen_attacks;
+}
+
 void init_all()
 {
     // init leaper pieces attacks
@@ -1300,6 +1327,59 @@ void init_all()
     // init slider pieces attacks
     init_sliders_attacks(bishop);
     init_sliders_attacks(rook);
+}
+
+// returns 1 if square is being attacked by side, 0 if otherwise
+static inline int is_square_attacked(int square, int side) {
+
+    // attacked by white/black pawn
+    if ((side == white) && (pawn_attacks[black][square] & bitboards[P])) return 1;
+    if ((side == black) && (pawn_attacks[white][square] & bitboards[p])) return 1;
+
+    // attacked by white/black knight
+    if (knight_attacks[square] & ((side == white) ? bitboards[N] : bitboards[n])) return 1;
+
+    // attacked by white/black bishop
+    if (get_bishop_attacks(square, occupancies[both]) & ((side == white) ? bitboards[B] : bitboards[b])) return 1;
+
+    // attacked by white/black rook
+    if (get_rook_attacks(square, occupancies[both]) & ((side == white) ? bitboards[R] : bitboards[r])) return 1;
+
+    // attacked by white/black rook
+    if (get_queen_attacks(square, occupancies[both]) & ((side == white) ? bitboards[Q] : bitboards[q])) return 1;
+
+    // attacked by white/black king
+    if (king_attacks[square] & ((side == white) ? bitboards[K] : bitboards[k])) return 1;
+
+    // if none ever returned 1, must not be attacked
+    return 0;
+
+}
+
+void print_attacked_squares(int side) {
+    // print offset
+    printf("\n");
+
+    // loop over board ranks
+    for (int rank = 0; rank < 8; rank++)
+    {
+        // loop ober board files
+        for (int file = 0; file < 8; file++)
+        {
+            // init square
+            int square = rank * 8 + file;
+
+            // print ranks
+            if (!file)
+                printf("  %d ", 8 - rank);
+
+            printf(" %d", (is_square_attacked(square, side)) ? 1 : 0);
+        }
+        // print new line every rank
+        printf("\n");
+    }
+    // print board files
+    printf("\n     a b c d e f g h\n\n");
 }
 
 /* ***********************************
