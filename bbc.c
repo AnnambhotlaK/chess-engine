@@ -1292,31 +1292,115 @@ static inline U64 get_rook_attacks(int square, U64 occupancy)
     return rook_attacks[square][occupancy];
 }
 
-static inline U64 get_queen_attacks(int square, U64 occupancy) {
+static inline U64 get_queen_attacks(int square, U64 occupancy)
+{
+    return (get_bishop_attacks(square, occupancy) | get_rook_attacks(square, occupancy));
+}
 
-    // queen attacks are all bishop OR rook attacks
-    U64 queen_attacks = (get_bishop_attacks(square, occupancy) | get_rook_attacks(square, occupancy));
+/* ***********************************
+   ***********************************
+            MOVE GENERATOR
+   ***********************************
+   ***********************************/
 
-    /*
-    U64 bishop_occupancies = occupancy;
-    U64 rook_occupancies = occupancy;
+// generate all moves
+static inline void generate_moves()
+{
+    // define source/target squares
+    int source_square, target_square;
 
-    bishop_occupancies &= bishop_masks[square];
-    bishop_occupancies *= bishop_magic_numbers[square];
-    bishop_occupancies >>= 64 - bishop_relevant_bits[square];
+    // define current pieces bitboard copy (can't change original board)
+    U64 bitboard, attacks;
 
-    // save bishop attacks in result
-    queen_attacks = bishop_attacks[square][bishop_occupancies];
+    // loop over all bitboards
+    for (int piece = P; piece <= k; piece++) {
+        bitboard = bitboards[piece];
+        
+        // generate white pawns and white king castling moves
+        if (side == white) {
+            if (piece == P) {
+                // loop over white pawns within bitboard
+                while (bitboard) {
+                    source_square = get_ls1b_index(bitboard);
+                    target_square = source_square - 8;
 
-    rook_occupancies &= rook_masks[square];
-    rook_occupancies *= rook_magic_numbers[square];
-    rook_occupancies >>= 64 - rook_relevant_bits[square];
+                    // generate quiet pawn moves
+                    // make sure target square on board and target_square isn't occupied by either white or black
+                    if (!(target_square < a8) && !get_bit(occupancies[both], target_square)) {
+                        // pawn promotion
+                        if (source_square >= a7 && source_square <= h7) 
+                        {
+                            // print moves
+                            printf("White Pawn Promotion: %s %sq\n", square_to_coordinates[source_square], square_to_coordinates[target_square]);
+                            printf("White Pawn Promotion: %s %sr\n", square_to_coordinates[source_square], square_to_coordinates[target_square]);
+                            printf("White Pawn Promotion: %s %sb\n", square_to_coordinates[source_square], square_to_coordinates[target_square]);
+                            printf("White Pawn Promotion: %s %sn\n", square_to_coordinates[source_square], square_to_coordinates[target_square]);
+                        }
+                        else {
 
-    // bitwise OR bishop attacks w/ rook attacks
-    queen_attacks |= rook_attacks[square][rook_occupancies];
-    */
+                            // one square ahead
+                            printf("White Pawn Push: %s %s\n", square_to_coordinates[source_square], square_to_coordinates[target_square]);
+                            // two squares ahead (starting move)
+                            // make sure double push target isn't occupied and currently on starting rank
 
-    return queen_attacks;
+                            if ((source_square >= a2 && source_square <= h2) && (!get_bit(occupancies[both], target_square - 8))) {
+                                printf("Double White Pawn Push: %s %s\n", square_to_coordinates[source_square], square_to_coordinates[target_square - 8]);
+                            }
+
+                        }
+                    }
+                    pop_bit(bitboard, source_square);
+                }
+            }
+        }
+
+        // generate black pawns and black king castling moves
+        else {
+            if (piece == p) {
+                // loop over black pawns within bitboard
+                while (bitboard) {
+                    source_square = get_ls1b_index(bitboard);
+                    target_square = source_square + 8;
+                    
+                    // generate quiet pawn moves
+                    // make sure target square on board and target_square isn't occupied by either white or black
+                    if (!(target_square > h1) && !get_bit(occupancies[both], target_square)) {
+                        // pawn promotion
+                        if (source_square >= a2 && source_square <= h2) 
+                        {
+                            // print moves
+                            printf("Black Pawn Promotion: %s %sq\n", square_to_coordinates[source_square], square_to_coordinates[target_square]);
+                            printf("Black Pawn Promotion: %s %sr\n", square_to_coordinates[source_square], square_to_coordinates[target_square]);
+                            printf("Black Pawn Promotion: %s %sb\n", square_to_coordinates[source_square], square_to_coordinates[target_square]);
+                            printf("Black Pawn Promotion: %s %sn\n", square_to_coordinates[source_square], square_to_coordinates[target_square]);
+                        }
+                        else {
+
+                            // one square ahead
+                            printf("Black Pawn Push: %s %s\n", square_to_coordinates[source_square], square_to_coordinates[target_square]);
+                            // two squares ahead (starting move)
+                            // make sure double push target isn't occupied and currently on starting rank
+                            if ((source_square >= a7 && source_square <= h7) && (!get_bit(occupancies[both], target_square + 8))) {
+                                printf("Double Black Pawn Push: %s %s\n", square_to_coordinates[source_square], square_to_coordinates[target_square + 8]);
+                            }
+
+                        }
+                    }
+                    pop_bit(bitboard, source_square);
+                }
+            }
+        }
+
+        // generate knight moves
+
+        // generate bishop moves
+
+        // generate rook moves
+
+        // generate queen moves
+
+        // generate king non-castling moves
+    }
 }
 
 void init_all()
@@ -1330,33 +1414,41 @@ void init_all()
 }
 
 // returns 1 if square is being attacked by side, 0 if otherwise
-static inline int is_square_attacked(int square, int side) {
+static inline int is_square_attacked(int square, int side)
+{
 
     // attacked by white/black pawn
-    if ((side == white) && (pawn_attacks[black][square] & bitboards[P])) return 1;
-    if ((side == black) && (pawn_attacks[white][square] & bitboards[p])) return 1;
+    if ((side == white) && (pawn_attacks[black][square] & bitboards[P]))
+        return 1;
+    if ((side == black) && (pawn_attacks[white][square] & bitboards[p]))
+        return 1;
 
     // attacked by white/black knight
-    if (knight_attacks[square] & ((side == white) ? bitboards[N] : bitboards[n])) return 1;
+    if (knight_attacks[square] & ((side == white) ? bitboards[N] : bitboards[n]))
+        return 1;
 
     // attacked by white/black bishop
-    if (get_bishop_attacks(square, occupancies[both]) & ((side == white) ? bitboards[B] : bitboards[b])) return 1;
+    if (get_bishop_attacks(square, occupancies[both]) & ((side == white) ? bitboards[B] : bitboards[b]))
+        return 1;
 
     // attacked by white/black rook
-    if (get_rook_attacks(square, occupancies[both]) & ((side == white) ? bitboards[R] : bitboards[r])) return 1;
+    if (get_rook_attacks(square, occupancies[both]) & ((side == white) ? bitboards[R] : bitboards[r]))
+        return 1;
 
     // attacked by white/black rook
-    if (get_queen_attacks(square, occupancies[both]) & ((side == white) ? bitboards[Q] : bitboards[q])) return 1;
+    if (get_queen_attacks(square, occupancies[both]) & ((side == white) ? bitboards[Q] : bitboards[q]))
+        return 1;
 
     // attacked by white/black king
-    if (king_attacks[square] & ((side == white) ? bitboards[K] : bitboards[k])) return 1;
+    if (king_attacks[square] & ((side == white) ? bitboards[K] : bitboards[k]))
+        return 1;
 
     // if none ever returned 1, must not be attacked
     return 0;
-
 }
 
-void print_attacked_squares(int side) {
+void print_attacked_squares(int side)
+{
     // print offset
     printf("\n");
 
@@ -1392,5 +1484,8 @@ int main(void)
 {
     // init leaper pieces attacks
     init_all();
+    parse_fen("r1b2rk1/ppp5/4p1p1/6P1/2B1P3/2NK4/PP3bpR/3R4 b - - 1 23");
+    print_board();
+    generate_moves();
     return 0;
 }
