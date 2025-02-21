@@ -1349,6 +1349,44 @@ static inline void generate_moves()
 
                         }
                     }
+
+                    // init pawn attacks on black pieces
+                    attacks = pawn_attacks[side][source_square] & occupancies[black];
+
+                    // generate pawn captures
+                    while (attacks)
+                    {
+                        // init target square
+                        target_square = get_ls1b_index(attacks);
+
+                        // pawn capture promotion
+                        if (source_square >= a7 && source_square <= h7) 
+                        {
+                            // print moves
+                            printf("White Pawn Capture Promotion: %s %sq\n", square_to_coordinates[source_square], square_to_coordinates[target_square]);
+                            printf("White Pawn Capture Promotion: %s %sr\n", square_to_coordinates[source_square], square_to_coordinates[target_square]);
+                            printf("White Pawn Capture Promotion: %s %sb\n", square_to_coordinates[source_square], square_to_coordinates[target_square]);
+                            printf("White Pawn Capture Promotion: %s %sn\n", square_to_coordinates[source_square], square_to_coordinates[target_square]);
+                        }
+                        else {
+                            // one square ahead capture
+                            printf("White Pawn Capture: %s %s\n", square_to_coordinates[source_square], square_to_coordinates[target_square]);
+                        }
+
+                        pop_bit(attacks, target_square);
+                    }
+
+                    // generate enpassant captures
+                    if (enpassant != no_sq) {
+                        // lookup pawn attacks and bitwise AND with enpassant bit
+                        U64 enpassant_attacks = pawn_attacks[side][source_square] & (1ULL << enpassant);
+                        if (enpassant_attacks) {
+                            int target_enpassant = get_ls1b_index(enpassant_attacks);
+                            pop_bit(enpassant_attacks, target_enpassant);
+                            printf("White Pawn En Passant Capture: %s %s\n", square_to_coordinates[source_square], square_to_coordinates[target_enpassant]);
+                        }
+                    }
+
                     pop_bit(bitboard, source_square);
                 }
             }
@@ -1386,6 +1424,44 @@ static inline void generate_moves()
 
                         }
                     }
+
+                    // init pawn attacks on white pieces
+                    attacks = pawn_attacks[side][source_square] & occupancies[white];
+
+                    // generate pawn captures
+                    while (attacks)
+                    {
+                        // init target square
+                        target_square = get_ls1b_index(attacks);
+
+                        // pawn capture promotion
+                        if (source_square >= a2 && source_square <= h2) 
+                        {
+                            // print moves
+                            printf("Black Pawn Capture Promotion: %s %sq\n", square_to_coordinates[source_square], square_to_coordinates[target_square]);
+                            printf("Black Pawn Capture Promotion: %s %sr\n", square_to_coordinates[source_square], square_to_coordinates[target_square]);
+                            printf("Black Pawn Capture Promotion: %s %sb\n", square_to_coordinates[source_square], square_to_coordinates[target_square]);
+                            printf("Black Pawn Capture Promotion: %s %sn\n", square_to_coordinates[source_square], square_to_coordinates[target_square]);
+                        }
+                        else {
+                            // one square ahead capture
+                            printf("Black Pawn Capture: %s %s\n", square_to_coordinates[source_square], square_to_coordinates[target_square]);
+                        }
+
+                        pop_bit(attacks, target_square);
+                    }
+
+                    // generate enpassant captures
+                    if (enpassant != no_sq) {
+                        // lookup pawn attacks and bitwise AND with enpassant bit
+                        U64 enpassant_attacks = pawn_attacks[side][source_square] & (1ULL << enpassant);
+                        if (enpassant_attacks) {
+                            int target_enpassant = get_ls1b_index(enpassant_attacks);
+                            pop_bit(enpassant_attacks, target_enpassant);
+                            printf("Black Pawn En Passant Capture: %s %s\n", square_to_coordinates[source_square], square_to_coordinates[target_enpassant]);
+                        }
+                    }
+
                     pop_bit(bitboard, source_square);
                 }
             }
@@ -1484,7 +1560,7 @@ int main(void)
 {
     // init leaper pieces attacks
     init_all();
-    parse_fen("r1b2rk1/ppp5/4p1p1/6P1/2B1P3/2NK4/PP3bpR/3R4 b - - 1 23");
+    parse_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/Pp2P3/2N2Q1p/1PPBBPpP/R3K2R b KQkq a3 0 1 ");
     print_board();
     generate_moves();
     return 0;
