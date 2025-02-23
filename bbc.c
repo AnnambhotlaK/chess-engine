@@ -20,6 +20,14 @@
 #define set_bit(bitboard, square) ((bitboard) |= (1ULL << (square)))
 #define pop_bit(bitboard, square) ((bitboard) &= ~(1ULL << (square)))
 
+// FEN positions to debug code
+#define empty_board "8/8/8/8/8/8/8/8 b - - "
+#define start_position "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 "
+#define tricky_position "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1 "
+#define killer_position "rnbqkb1r/pp1p1pPp/8/2p1pP2/1P1P4/3P3P/P1P1P3/RNBQKBNR w KQkq e6 0 1"
+#define cmk_position "r2q1rk1/ppp2ppp/2n1bn2/2b1p3/3pP3/3P1NPP/PPP1NPB1/R1BQ1RK1 b - - 0 9 "
+#define repetitions "2r3k1/R7/8/1R6/8/8/P4KPP/8 w - - 0 40 "
+
 // count bits in bitboard
 static inline int count_bits(U64 bitboard)
 {
@@ -1297,6 +1305,67 @@ static inline U64 get_queen_attacks(int square, U64 occupancy)
     return (get_bishop_attacks(square, occupancy) | get_rook_attacks(square, occupancy));
 }
 
+// returns 1 if square is being attacked by side, 0 if otherwise
+static inline int is_square_attacked(int square, int side)
+{
+
+    // attacked by white/black pawn
+    if ((side == white) && (pawn_attacks[black][square] & bitboards[P]))
+        return 1;
+    if ((side == black) && (pawn_attacks[white][square] & bitboards[p]))
+        return 1;
+
+    // attacked by white/black knight
+    if (knight_attacks[square] & ((side == white) ? bitboards[N] : bitboards[n]))
+        return 1;
+
+    // attacked by white/black bishop
+    if (get_bishop_attacks(square, occupancies[both]) & ((side == white) ? bitboards[B] : bitboards[b]))
+        return 1;
+
+    // attacked by white/black rook
+    if (get_rook_attacks(square, occupancies[both]) & ((side == white) ? bitboards[R] : bitboards[r]))
+        return 1;
+
+    // attacked by white/black rook
+    if (get_queen_attacks(square, occupancies[both]) & ((side == white) ? bitboards[Q] : bitboards[q]))
+        return 1;
+
+    // attacked by white/black king
+    if (king_attacks[square] & ((side == white) ? bitboards[K] : bitboards[k]))
+        return 1;
+
+    // if none ever returned 1, must not be attacked
+    return 0;
+}
+
+void print_attacked_squares(int side)
+{
+    // print offset
+    printf("\n");
+
+    // loop over board ranks
+    for (int rank = 0; rank < 8; rank++)
+    {
+        // loop ober board files
+        for (int file = 0; file < 8; file++)
+        {
+            // init square
+            int square = rank * 8 + file;
+
+            // print ranks
+            if (!file)
+                printf("  %d ", 8 - rank);
+
+            printf(" %d", (is_square_attacked(square, side)) ? 1 : 0);
+        }
+        // print new line every rank
+        printf("\n");
+    }
+    // print board files
+    printf("\n     a b c d e f g h\n\n");
+}
+
 /* ***********************************
    ***********************************
             MOVE GENERATOR
@@ -1318,6 +1387,7 @@ static inline void generate_moves()
         
         // generate white pawns and white king castling moves
         if (side == white) {
+
             if (piece == P) {
                 // loop over white pawns within bitboard
                 while (bitboard) {
@@ -1388,6 +1458,31 @@ static inline void generate_moves()
                     }
 
                     pop_bit(bitboard, source_square);
+                }
+            }
+
+            // handle castling moves
+            if (piece == K) {
+                // king side available
+                if (castle & wk) {
+                    // make sure square between king and king's rook are empty
+                    if (!get_bit(occupancies[both], f1) && !get_bit(occupancies[both], g1)) {
+                        if (!is_square_attacked(e1, black) && !is_square_attacked(f1, black)) {
+                            printf("White Kingside Castling: e1 g1\n");
+                        }
+
+                    }
+                }
+                // queen side available
+                if (castle & wq) 
+                {
+                    // make sure square between king and king's rook are empty
+                    if (!get_bit(occupancies[both], d1) && !get_bit(occupancies[both], c1) && !get_bit(occupancies[both], b1)) {
+                        if (!is_square_attacked(e1, black) && !is_square_attacked(d1, black)) {
+                            printf("White Queenside Castling: e1 c1\n");
+                        }
+
+                    }
                 }
             }
         }
@@ -1465,6 +1560,30 @@ static inline void generate_moves()
                     pop_bit(bitboard, source_square);
                 }
             }
+
+            // handle castling moves
+            if (piece == k) {
+                // king side available
+                if (castle & bk) {
+                    // make sure square between king and king's rook are empty
+                    if (!get_bit(occupancies[both], f8) && !get_bit(occupancies[both], g8)) {
+                        if (!is_square_attacked(e8, white) && !is_square_attacked(f8, white)) {
+                            printf("Black Kingside Castling: e8 g8\n");
+                        }
+
+                    }
+                }
+                // queen side available
+                if (castle & bq) 
+                {
+                    // make sure square between king and king's rook are empty
+                    if (!get_bit(occupancies[both], d8) && !get_bit(occupancies[both], c8) && !get_bit(occupancies[both], b8)) {
+                        if (!is_square_attacked(e8, white) && !is_square_attacked(d8, white)) {
+                            printf("Black Queenside Castling: e8 c8\n");
+                        }
+                    }
+                }
+            }
         }
 
         // generate knight moves
@@ -1489,67 +1608,6 @@ void init_all()
     init_sliders_attacks(rook);
 }
 
-// returns 1 if square is being attacked by side, 0 if otherwise
-static inline int is_square_attacked(int square, int side)
-{
-
-    // attacked by white/black pawn
-    if ((side == white) && (pawn_attacks[black][square] & bitboards[P]))
-        return 1;
-    if ((side == black) && (pawn_attacks[white][square] & bitboards[p]))
-        return 1;
-
-    // attacked by white/black knight
-    if (knight_attacks[square] & ((side == white) ? bitboards[N] : bitboards[n]))
-        return 1;
-
-    // attacked by white/black bishop
-    if (get_bishop_attacks(square, occupancies[both]) & ((side == white) ? bitboards[B] : bitboards[b]))
-        return 1;
-
-    // attacked by white/black rook
-    if (get_rook_attacks(square, occupancies[both]) & ((side == white) ? bitboards[R] : bitboards[r]))
-        return 1;
-
-    // attacked by white/black rook
-    if (get_queen_attacks(square, occupancies[both]) & ((side == white) ? bitboards[Q] : bitboards[q]))
-        return 1;
-
-    // attacked by white/black king
-    if (king_attacks[square] & ((side == white) ? bitboards[K] : bitboards[k]))
-        return 1;
-
-    // if none ever returned 1, must not be attacked
-    return 0;
-}
-
-void print_attacked_squares(int side)
-{
-    // print offset
-    printf("\n");
-
-    // loop over board ranks
-    for (int rank = 0; rank < 8; rank++)
-    {
-        // loop ober board files
-        for (int file = 0; file < 8; file++)
-        {
-            // init square
-            int square = rank * 8 + file;
-
-            // print ranks
-            if (!file)
-                printf("  %d ", 8 - rank);
-
-            printf(" %d", (is_square_attacked(square, side)) ? 1 : 0);
-        }
-        // print new line every rank
-        printf("\n");
-    }
-    // print board files
-    printf("\n     a b c d e f g h\n\n");
-}
-
 /* ***********************************
    ***********************************
               MAIN DRIVER
@@ -1560,7 +1618,7 @@ int main(void)
 {
     // init leaper pieces attacks
     init_all();
-    parse_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/Pp2P3/2N2Q1p/1PPBBPpP/R3K2R b KQkq a3 0 1 ");
+    parse_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R b KQkq - 0 1");
     print_board();
     generate_moves();
     return 0;
