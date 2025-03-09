@@ -1587,14 +1587,136 @@ static inline void generate_moves()
         }
 
         // generate knight moves
+        if ((side == white) ? piece == N : piece == n)
+        {
+            while (bitboard) {
+                source_square = get_ls1b_index(bitboard);
+
+                // init knight attacks
+                // attacks are knight attacks where NOT attacking your own piece
+                attacks = knight_attacks[source_square] & ((side == white) ? (~occupancies[white]) : (~occupancies[black]));
+
+                // loop over target squares available from attacks
+                while (attacks) {
+                    target_square = get_ls1b_index(attacks);
+                    if (!get_bit(((side == white) ? occupancies[black] : occupancies[white]), target_square)) {
+                        printf("Knight Quiet Move: %s %s\n", square_to_coordinates[source_square], square_to_coordinates[target_square]);
+                    }
+                    else {
+                        printf("Knight Capture: %s %s\n", square_to_coordinates[source_square], square_to_coordinates[target_square]);
+                    }
+                    
+                    pop_bit(attacks, target_square);
+                }
+
+                pop_bit(bitboard, source_square);
+            }
+        }
 
         // generate bishop moves
+        if ((side == white) ? piece == B : piece == b)
+        {
+            while (bitboard) {
+                source_square = get_ls1b_index(bitboard);
+
+                // init bishop attacks
+                // attacks are bishop attacks not attacking your own piece or seeing through pieces
+                attacks = get_bishop_attacks(source_square, occupancies[both]) & ((side == white) ? (~occupancies[white]) : (~occupancies[black]));
+
+                // loop over target squares available from attacks
+                while (attacks) {
+                    target_square = get_ls1b_index(attacks);
+                    if (!get_bit(((side == white) ? occupancies[black] : occupancies[white]), target_square)) {
+                        printf("Bishop Quiet Move: %s %s\n", square_to_coordinates[source_square], square_to_coordinates[target_square]);
+                    }
+                    else {
+                        printf("Bishop Capture: %s %s\n", square_to_coordinates[source_square], square_to_coordinates[target_square]);
+                    }
+                    
+                    pop_bit(attacks, target_square);
+                }
+
+                pop_bit(bitboard, source_square);
+            }
+        }
 
         // generate rook moves
+        if ((side == white) ? piece == R : piece == r)
+        {
+            while (bitboard) {
+                source_square = get_ls1b_index(bitboard);
+
+                // init rook attacks
+                attacks = get_rook_attacks(source_square, occupancies[both]) & ((side == white) ? (~occupancies[white]) : (~occupancies[black]));
+
+                // loop over target squares available from attacks
+                while (attacks) {
+                    target_square = get_ls1b_index(attacks);
+                    if (!get_bit(((side == white) ? occupancies[black] : occupancies[white]), target_square)) {
+                        printf("Rook Quiet Move: %s %s\n", square_to_coordinates[source_square], square_to_coordinates[target_square]);
+                    }
+                    else {
+                        printf("Rook Capture: %s %s\n", square_to_coordinates[source_square], square_to_coordinates[target_square]);
+                    }
+                    
+                    pop_bit(attacks, target_square);
+                }
+
+                pop_bit(bitboard, source_square);
+            }
+        }
 
         // generate queen moves
+        if ((side == white) ? piece == Q : piece == q)
+        {
+            while (bitboard) {
+                source_square = get_ls1b_index(bitboard);
+
+                // init queen attacks
+                attacks = get_queen_attacks(source_square, occupancies[both]) & ((side == white) ? (~occupancies[white]) : (~occupancies[black]));
+
+                // loop over target squares available from attacks
+                while (attacks) {
+                    target_square = get_ls1b_index(attacks);
+                    if (!get_bit(((side == white) ? occupancies[black] : occupancies[white]), target_square)) {
+                        printf("Queen Quiet Move: %s %s\n", square_to_coordinates[source_square], square_to_coordinates[target_square]);
+                    }
+                    else {
+                        printf("Queen Capture: %s %s\n", square_to_coordinates[source_square], square_to_coordinates[target_square]);
+                    }
+                    
+                    pop_bit(attacks, target_square);
+                }
+
+                pop_bit(bitboard, source_square);
+            }
+        }
 
         // generate king non-castling moves
+        if ((side == white) ? piece == K : piece == k)
+        {
+            while (bitboard) {
+                source_square = get_ls1b_index(bitboard);
+
+                // init knight attacks
+                // attacks are knight attacks where NOT attacking your own piece
+                attacks = king_attacks[source_square] & ((side == white) ? (~occupancies[white]) : (~occupancies[black]));
+
+                // loop over target squares available from attacks
+                while (attacks) {
+                    target_square = get_ls1b_index(attacks);
+                    if (!get_bit(((side == white) ? occupancies[black] : occupancies[white]), target_square)) {
+                        printf("King Quiet Move: %s %s\n", square_to_coordinates[source_square], square_to_coordinates[target_square]);
+                    }
+                    else {
+                        printf("King Capture: %s %s\n", square_to_coordinates[source_square], square_to_coordinates[target_square]);
+                    }
+                    
+                    pop_bit(attacks, target_square);
+                }
+                pop_bit(bitboard, source_square);
+            }
+        }
     }
 }
 
@@ -1618,7 +1740,7 @@ int main(void)
 {
     // init leaper pieces attacks
     init_all();
-    parse_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R b KQkq - 0 1");
+    parse_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
     print_board();
     generate_moves();
     return 0;
