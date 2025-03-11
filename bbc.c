@@ -1347,7 +1347,7 @@ void print_attacked_squares(int side)
     // loop over board ranks
     for (int rank = 0; rank < 8; rank++)
     {
-        // loop ober board files
+        // loop over board files
         for (int file = 0; file < 8; file++)
         {
             // init square
@@ -1364,6 +1364,96 @@ void print_attacked_squares(int side)
     }
     // print board files
     printf("\n     a b c d e f g h\n\n");
+}
+
+/* ***********************************
+   ***********************************
+     MOVE ENCODING + PRINTING MOVES
+   ***********************************
+   ***********************************/
+
+/*
+    Things to be represented in binary formatting of a move (bit ranges shown in 1s)
+    0000 0000 0000 0000 0011 1111    source square (6)     --> 0x3F
+    0000 0000 0000 1111 1100 0000    target square (6)     --> 0xFC0
+    0000 0000 1111 0000 0000 0000    piece (4)             --> 0xF000
+    0000 1111 0000 0000 0000 0000    promoted piece (4)    --> 0xF0000
+    0001 0000 0000 0000 0000 0000    capture flag (1)      --> 0x100000
+    0010 0000 0000 0000 0000 0000    double push flag (1)  --> 0x200000
+    0100 0000 0000 0000 0000 0000    enpassant flag (1)    --> 0x400000
+    1000 0000 0000 0000 0000 0000    castling flag (1)     --> 0x800000
+*/
+
+// encode move
+#define encode_move(source, target, piece, promoted, capture, double_push, enpassant, castling) \
+    (source) |               \
+    (target << 6) |          \
+    (piece << 12) |          \
+    (promoted << 16) |       \
+    (capture << 20) |        \
+    (double_push << 21) |    \
+    (enpassant << 22) |      \
+    (castling << 23)         \
+
+// extract values from move
+#define get_move_source(move) (move & 0x3F)
+#define get_move_target(move) ((move & 0xFC0) >> 6)
+#define get_move_piece(move) ((move & 0xF000) >> 12)
+#define get_move_promoted(move) ((move & 0xF0000) >> 16)
+#define get_move_capture(move) ((move & 0x100000) >> 20)
+#define get_move_double_push(move) ((move & 0x200000) >> 21) 
+#define get_move_enpassant(move) ((move & 0x400000) >> 22)
+#define get_move_castling(move) ((move & 0x800000) >> 23)
+
+// move list structure
+typedef struct {
+    int moves[256];
+    int count;
+} moves;
+
+// add move to move list
+static inline void add_move(moves *move_list, int move) {
+    move_list->moves[move_list->count] = move;
+
+    // increment move count
+    move_list->count++;
+}
+
+// promoted pieces
+char promoted_pieces[] = {
+    [Q] = 'q',
+    [R] = 'r',
+    [B] = 'b',
+    [N] = 'n',
+    [q] = 'q',
+    [r] = 'r',
+    [b] = 'b',
+    [n] = 'n',
+};
+
+// print move (for UCI protocol purposes)
+void print_move(int move) {
+    printf("%s%s%c\n", square_to_coordinates[get_move_source(move)],
+                     square_to_coordinates[get_move_target(move)], 
+                     promoted_pieces[get_move_promoted(move)]);
+}
+
+// print move list (for debugging purposes)
+void print_move_list(moves *move_list) {
+    printf("\nmove    piece  capture  double_push  enpassant  castling\n\n");
+    // loop over moves in move list
+    for (int move_count = 0; move_count < move_list->count; move_count++) {
+        int move = move_list->moves[move_count];
+        printf("%s%s%c     %c       %d          %d           %d          %d\n", square_to_coordinates[get_move_source(move)],
+                           square_to_coordinates[get_move_target(move)], 
+                           promoted_pieces[get_move_promoted(move)],
+                           ascii_pieces[get_move_piece(move)],
+                           get_move_capture(move),
+                           get_move_double_push(move),
+                           get_move_enpassant(move),
+                           get_move_castling(move));
+    }
+    printf("\n\nTotal number of moves: %d\n", move_list->count);
 }
 
 /* ***********************************
@@ -1782,39 +1872,6 @@ void init_all()
    ***********************************
    ***********************************/
 
-/*
-    Things to be represented in binary formatting of a move (bit ranges shown in 1s)
-    0000 0000 0000 0000 0011 1111    source square (6)     --> 0x3F
-    0000 0000 0000 1111 1100 0000    target square (6)     --> 0xFC0
-    0000 0000 1111 0000 0000 0000    piece (4)             --> 0xF000
-    0000 1111 0000 0000 0000 0000    promoted piece (4)    --> 0xF0000
-    0001 0000 0000 0000 0000 0000    capture flag (1)      --> 0x100000
-    0010 0000 0000 0000 0000 0000    double push flag (1)  --> 0x200000
-    0100 0000 0000 0000 0000 0000    enpassant flag (1)    --> 0x400000
-    1000 0000 0000 0000 0000 0000    castling flag (1)     --> 0x800000
-*/
-
-// encode move
-#define encode_move(source, target, piece, promoted, capture, double_push, enpassant, castling) \
-    (source) |               \
-    (target << 6) |          \
-    (piece << 12) |          \
-    (promoted << 16) |       \
-    (capture << 20) |        \
-    (double_push << 21) |    \
-    (enpassant << 22) |      \
-    (castling << 23)         \
-
-// extract values from move
-#define get_move_source(move) (move & 0x3F)
-#define get_move_target(move) ((move & 0xFC0) >> 6)
-#define get_move_piece(move) ((move & 0xF000) >> 12)
-#define get_move_promoted(move) ((move & 0xF0000) >> 16)
-#define get_move_capture(move) ((move & 0x100000) >> 20)
-#define get_move_double_push(move) ((move & 0x200000) >> 21) 
-#define get_move_enpassant(move) ((move & 0x400000) >> 22)
-#define get_move_castling(move) ((move & 0x800000) >> 23)
-
 
 int main(void)
 {
@@ -1823,14 +1880,11 @@ int main(void)
     print_board();
     generate_moves();
 
-    int move = encode_move(e7, d8, P, N, 1, 0, 0, 0);
-    printf("source square: %s\n", square_to_coordinates[get_move_source(move)]);
-    printf("target square: %s\n", square_to_coordinates[get_move_target(move)]);
-    printf("piece: %c\n", ascii_pieces[get_move_piece(move)]);
-    printf("promoted?: %c\n", ascii_pieces[get_move_promoted(move)]);
-    printf("captures?: %d\n", get_move_capture(move));
-    printf("double push?: %d\n", get_move_double_push(move));
-    printf("enpassant?: %d\n", get_move_enpassant(move));
-    printf("castling?: %d\n", get_move_castling(move));
+    // create move list
+    moves move_list[1];
+    move_list->count = 0;
+
+    add_move(move_list, encode_move(d7, e8, b, 0, 0, 0, 0, 0));
+    print_move_list(move_list);
     return 0;
 }
