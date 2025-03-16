@@ -1463,6 +1463,59 @@ void print_move_list(moves *move_list) {
     printf("\n\nTotal number of moves: %d\n", move_list->count);
 }
 
+// define copy_board macro
+#define copy_board() \
+    U64 bitboards_copy[12], occupancies_copy[3]; \
+    int side_copy, enpassant_copy, castle_copy; \
+    memcpy(bitboards_copy, bitboards, 96); \
+    memcpy(occupancies_copy, occupancies, 24); \
+    side_copy = side, enpassant_copy = enpassant, castle_copy = castle; \
+
+// define restore_board macro
+#define take_back() \
+    memcpy(bitboards, bitboards_copy, 96); \
+    memcpy(occupancies, occupancies_copy, 24); \
+    side = side_copy, enpassant = enpassant_copy, castle = castle_copy; \
+
+// move types
+enum { all_moves, only_captures };
+
+// make move on board func
+static inline int make_move(int move, int move_flag) {
+    // quiet moves
+    if (move_flag == all_moves) {
+        // preserve board state in case move is illegal
+        copy_board();
+
+        // parse the move
+        int source_square = get_move_source(move);
+        int target_square = get_move_target(move);
+        int piece = get_move_piece(move);
+        int promoted_piece = get_move_promoted(move);
+        int capture = get_move_capture(move);
+        int double_push = get_move_double_push(move);
+        int enpassant = get_move_enpassant(move);
+        int castling = get_move_castling(move);
+
+        // move piece
+        pop_bit(bitboards[piece], source_square);
+        set_bit(bitboards[piece], target_square);
+
+    }
+
+    // captures
+    else {
+        // make sure move is a capture
+        if (get_move_capture(move)) {
+            make_move(move, all_moves);
+        }
+        else {
+            // don't capture
+            return 0;
+        }
+    }
+}
+
 /* ***********************************
    ***********************************
             MOVE GENERATOR
@@ -1886,11 +1939,22 @@ int main(void)
     parse_fen(tricky_position);
     print_board();
 
-    // create move list
     moves move_list[1];
 
     generate_moves(move_list);
 
-    print_move_list(move_list);
+    // loop over generated moves
+    for (int i = 0; i < move_list->count; i++) {
+        int move = move_list->moves[i];
+        copy_board();
+        make_move(move, all_moves);
+        print_board();
+        getchar();
+        
+        take_back();
+        print_board();
+        getchar();
+    }
+
     return 0;
 }
