@@ -523,7 +523,7 @@ void print_board()
     printf("     Side:     %s\n", !side ? "white" : "black");
 
     // print enpassant square
-    printf("     Enpassant:   %s\n", (enpassant != no_sq) ? square_to_coordinates[enpassant] : "no");
+    printf("     Enpassant:   %s\n", ((enpassant != no_sq) ? square_to_coordinates[enpassant] : "no"));
 
     // print castling rights
     printf("     Castling:  %c %c %c %c\n\n", (castle & wk) ? 'K' : '-',
@@ -1480,7 +1480,7 @@ void print_move_list(moves *move_list) {
 // move types
 enum { all_moves, only_captures };
 
-// make move on board func
+// make move on corresponding bitboards
 static inline int make_move(int move, int move_flag) {
     // quiet moves
     if (move_flag == all_moves) {
@@ -1494,13 +1494,52 @@ static inline int make_move(int move, int move_flag) {
         int promoted_piece = get_move_promoted(move);
         int capture = get_move_capture(move);
         int double_push = get_move_double_push(move);
-        int enpassant = get_move_enpassant(move);
+        int enpass = get_move_enpassant(move);
         int castling = get_move_castling(move);
 
         // move piece
         pop_bit(bitboards[piece], source_square);
         set_bit(bitboards[piece], target_square);
 
+        // handling captures
+        if (capture) {
+            // pick up bb piece index ranges
+            int start_piece, end_piece;
+            // white to move
+            if (side == white) {
+                start_piece = p;
+                end_piece = k;
+            }
+            // black to move
+            else {
+                start_piece = P;
+                end_piece = K;
+            }
+            // loop over bitboards OPPOSITE side to move
+            for (int bb_piece = start_piece; bb_piece <= end_piece; bb_piece++) {
+                if (get_bit(bitboards[bb_piece], target_square)) {
+                    pop_bit(bitboards[bb_piece], target_square);
+                    break;
+                }
+            }
+        }
+
+        // handle pawn promotions
+        if (promoted_piece) {
+            // erase pawn from target_square
+            pop_bit(bitboards[(side == white) ? white : black], target_square);
+
+            // set up promoted piece on board
+            set_bit(bitboards[promoted_piece], target_square);
+        }
+
+        if (enpass) {
+            // erase the pawn based on side to move
+            (side == white) ? pop_bit(bitboards[p], target_square + 8) : pop_bit(bitboards[P], target_square - 8);
+        }
+
+        // reset enpassant square
+        enpassant = no_sq;
     }
 
     // captures
@@ -1936,7 +1975,7 @@ void init_all()
 int main(void)
 {
     init_all();
-    parse_fen(tricky_position);
+    parse_fen("r3k2r/p11pqpb1/bn2pnp1/2pPN3/Pp2P3/2N2Q1p/1PPBBPPP/R3K2R b KQkq a3 0 1 ");
     print_board();
 
     moves move_list[1];
@@ -1949,7 +1988,6 @@ int main(void)
         copy_board();
         make_move(move, all_moves);
         print_board();
-        getchar();
         
         take_back();
         print_board();
