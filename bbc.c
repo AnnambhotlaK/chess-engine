@@ -151,9 +151,9 @@ enum
 enum
 {
     wk = 1,
-    bk = 2,
-    wq = 4,
-    bq = 8,
+    wq = 2,
+    bk = 4,
+    bq = 8
 };
 
 // encode pieces
@@ -506,9 +506,10 @@ void print_board()
             for (int bb_piece = P; bb_piece <= k; bb_piece++)
             {
                 // if there is a piece on current square
-                if (get_bit(bitboards[bb_piece], square))
+                if (get_bit(bitboards[bb_piece], square)) {
                     // get piece code
                     piece = bb_piece;
+                }
             }
             printf(" %c", (piece == -1) ? '.' : ascii_pieces[piece]);
         }
@@ -526,10 +527,10 @@ void print_board()
     printf("     Enpassant:   %s\n", ((enpassant != no_sq) ? square_to_coordinates[enpassant] : "no"));
 
     // print castling rights
-    printf("     Castling:  %c %c %c %c\n\n", (castle & wk) ? 'K' : '-',
-           (castle & wq) ? 'Q' : '-',
-           (castle & bk) ? 'k' : '-',
-           (castle & bq) ? 'q' : '-');
+    printf("     Castling:  %c%c%c%c\n\n", (castle & wk) ? 'K' : '-',
+                                           (castle & wq) ? 'Q' : '-',
+                                           (castle & bk) ? 'k' : '-',
+                                           (castle & bq) ? 'q' : '-');
 }
 
 // parse FEN string
@@ -1480,6 +1481,19 @@ void print_move_list(moves *move_list) {
 // move types
 enum { all_moves, only_captures };
 
+// constant for updating castling rights
+// move on square represents change of castling rights
+const int castling_rights[64] = {
+    7, 15, 15, 15,  3, 15, 15, 11,
+   15, 15, 15, 15, 15, 15, 15, 15,
+   15, 15, 15, 15, 15, 15, 15, 15,
+   15, 15, 15, 15, 15, 15, 15, 15,
+   15, 15, 15, 15, 15, 15, 15, 15,
+   15, 15, 15, 15, 15, 15, 15, 15,
+   15, 15, 15, 15, 15, 15, 15, 15,
+   13, 15, 15, 15, 12, 15, 15, 14
+};
+
 // make move on corresponding bitboards
 static inline int make_move(int move, int move_flag) {
     // quiet moves
@@ -1571,6 +1585,39 @@ static inline int make_move(int move, int move_flag) {
                     set_bit(bitboards[r], d8);
                     break;
             }
+        }
+        
+        // update castling rights
+        castle &= castling_rights[source_square];
+        castle &= castling_rights[target_square];
+
+        // reset occupancies
+        memset(occupancies, 0ULL, 24);
+        // loop over white pieces, update bitboards
+        for (int bb_piece = P; bb_piece <= K; bb_piece++) {
+            occupancies[white] |= bitboards[bb_piece];
+        }
+        // loop over black piece, update bitboards
+        for (int bb_piece = p; bb_piece <= k; bb_piece++) {
+            occupancies[black] |= bitboards[bb_piece];
+        }
+        // update both
+        occupancies[both] |= occupancies[white];
+        occupancies[both] |= occupancies[black];
+
+        // change side
+        side ^= 1;
+        // make sure king has not been exposed to check (illegal)
+        if (is_square_attacked((side == white) ? get_ls1b_index(bitboards[k]) : get_ls1b_index(bitboards[K]), side))
+        {
+            // take move back
+            take_back();
+            // return illegal move
+            return 0;
+        }
+        else {
+            // if not illegal, everything good
+            return 1;
         }
     }
 
@@ -1976,7 +2023,7 @@ static inline void generate_moves(moves *move_list)
                     }
                     else
                     {
-                        add_move(move_list, encode_move(source_square, target_square, piece, 0, 0, 0, 0, 0));
+                        add_move(move_list, encode_move(source_square, target_square, piece, 0, 1, 0, 0, 0));
                     }
 
                     pop_bit(attacks, target_square);
@@ -2007,19 +2054,25 @@ void init_all()
 int main(void)
 {
     init_all();
-    parse_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R b KQkq - 0 1 ");
-    print_board();
+    parse_fen("7k/8/8/8/RNB5/2N5/q1Q5/K1N5 w - - 0 1");
 
     moves move_list[1];
 
     generate_moves(move_list);
+    print_board();
 
     // loop over generated moves
     for (int i = 0; i < move_list->count; i++) {
         int move = move_list->moves[i];
         copy_board();
-        make_move(move, all_moves);
+
+        // if move not valid, skip to next
+        if (!make_move(move, all_moves)) {
+            continue;
+        }
+
         print_board();
+        print_move(move);
         getchar();
         
         take_back();
