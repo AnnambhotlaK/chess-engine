@@ -1540,6 +1540,38 @@ static inline int make_move(int move, int move_flag) {
 
         // reset enpassant square
         enpassant = no_sq;
+
+        // handle double push
+        if (double_push) {
+            // set enpassant square depending on side to move
+            (side == white) ? (enpassant = target_square + 8) : (enpassant = target_square - 8);
+        }
+
+        // handle castling
+        if (castling) {
+            switch (target_square) {
+                // white kingside
+                case (g1):
+                    pop_bit(bitboards[R], h1);
+                    set_bit(bitboards[R], f1);
+                    break;
+                // white queenside
+                case (c1):
+                    pop_bit(bitboards[R], a1);
+                    set_bit(bitboards[R], d1);
+                    break;
+                // black kingside
+                case (g8):
+                    pop_bit(bitboards[r], h8);
+                    set_bit(bitboards[r], f8);
+                    break;
+                // black queenside
+                case (c8):
+                    pop_bit(bitboards[r], a8);
+                    set_bit(bitboards[r], d8);
+                    break;
+            }
+        }
     }
 
     // captures
@@ -1975,7 +2007,7 @@ void init_all()
 int main(void)
 {
     init_all();
-    parse_fen("r3k2r/p11pqpb1/bn2pnp1/2pPN3/Pp2P3/2N2Q1p/1PPBBPPP/R3K2R b KQkq a3 0 1 ");
+    parse_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R b KQkq - 0 1 ");
     print_board();
 
     moves move_list[1];
@@ -1988,6 +2020,7 @@ int main(void)
         copy_board();
         make_move(move, all_moves);
         print_board();
+        getchar();
         
         take_back();
         print_board();
