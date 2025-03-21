@@ -6,6 +6,11 @@
 
 #include <stdio.h>
 #include <string.h>
+#ifdef WIN64
+    #include <windows.h>
+#else
+    #include <sys/time.h>
+#endif
 
 /* ***********************************
          MACROS, DATA TYPES
@@ -2050,35 +2055,58 @@ void init_all()
    ***********************************
    ***********************************/
 
+int get_time_ms() {
+    #ifdef WIN64
+        return GetTickCount();
+    #else
+        struct timeval time_value;
+        gettimeofday(&time_value, NULL);
+        return (time_value.tv_sec * 1000 + time_value.tv_usec / 1000);
+    #endif
+}
+
+// leaf nodes (number of positions reached during test of move gen at given depth)
+long nodes;
+
+// perft driver at depth num of moves
+static inline void perft_driver(int depth) {
+    // base case
+    if (depth == 0) {
+        // increment count of reached positions
+        nodes++;
+        return;
+    }
+
+    // define new move_list and gen moves for current depth
+    moves move_list[1];
+    generate_moves(move_list);
+
+    // loop over generated moves
+    for (int i = 0; i < move_list->count; i++) {
+        copy_board();
+        // if move not valid, skip to next
+        if (!make_move(move_list->moves[i], all_moves)) {
+            continue;
+        }
+        // call perft driver recursively on lower depth
+        perft_driver(depth - 1);
+        take_back();
+    }
+}
+
 
 int main(void)
 {
     init_all();
-    parse_fen("7k/8/8/8/RNB5/2N5/q1Q5/K1N5 w - - 0 1");
-
-    moves move_list[1];
-
-    generate_moves(move_list);
+    parse_fen(start_position);
     print_board();
 
-    // loop over generated moves
-    for (int i = 0; i < move_list->count; i++) {
-        int move = move_list->moves[i];
-        copy_board();
+    int start = get_time_ms();
 
-        // if move not valid, skip to next
-        if (!make_move(move, all_moves)) {
-            continue;
-        }
+    perft_driver(6);
 
-        print_board();
-        print_move(move);
-        getchar();
-        
-        take_back();
-        print_board();
-        getchar();
-    }
-
+    // time taken to exec program
+    printf("Time taken to execute: %d ms\n", get_time_ms() - start);
+    printf("Nodes found: %ld\n", nodes);
     return 0;
 }
